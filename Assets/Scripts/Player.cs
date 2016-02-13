@@ -24,8 +24,4 @@ public class Player : MonoBehaviour {
 
 		transform.Translate (h, 0, v);
 	}
-
-	private void positionToServer() {
-		
-	}
 }
