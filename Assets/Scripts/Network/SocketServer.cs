@@ -16,6 +16,9 @@ namespace Multiverse.Network
 		private int m_Port;
 		private Socket m_Socket;
 
+		private byte[] m_bRecvBuffer = new byte[0x1000];
+		private byte[] m_bPacketStream = new byte[0];
+
 		#endregion
 
 		#region Constructors
@@ -44,7 +47,7 @@ namespace Multiverse.Network
 
 				// Connect Socket
 				m_Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				IAsyncResult result = m_Socket.BeginConnect( m_ServerIP, m_Port, null, null );
+				IAsyncResult result = m_Socket.BeginConnect( m_ServerIP, m_Port, new AsyncCallback(OnConnect), null );
 
 				bool success = result.AsyncWaitHandle.WaitOne( 5000, true );
 
@@ -54,7 +57,6 @@ namespace Multiverse.Network
 					throw new ApplicationException("Failed to connect to server");
 				}
 
-				Logger.Log("Connected to {0} on port {1}", m_ServerIP, m_Port);
 				return true;
 			}
 			catch(Exception e)
@@ -64,6 +66,57 @@ namespace Multiverse.Network
 			return false;
 		}
 
+		public void OnConnect(IAsyncResult async)
+		{
+			try
+			{
+				// Complete the connection
+				m_Socket.EndConnect(async);
+
+				Logger.Log("Client connected to {0}",  m_Socket.RemoteEndPoint);
+
+				// Setup BeginReceive Callback
+				m_Socket.BeginReceive(m_bRecvBuffer, 0, 0x1000, SocketFlags.None, new AsyncCallback(OnDataReceive), null);
+			}
+			catch (SocketException e)
+			{
+				Logger.Log (Logger.LogLevel.Info, "SocketServer", "OnConnect: {0}", e.Message);
+			}
+		}
+
+		public void OnDataReceive(IAsyncResult async)
+		{
+			int numRecvBytes = 0;
+
+			try
+			{
+				numRecvBytes = m_Socket.EndReceive(async);
+				byte[] newData = new byte[numRecvBytes];
+
+				Buffer.BlockCopy(m_bRecvBuffer, 0, newData, 0, numRecvBytes);
+
+				m_bPacketStream = newData;
+
+				Logger.Log("Received {0} bytes", numRecvBytes);
+
+				ProcessPacket(m_bRecvBuffer);
+			}
+			catch (SocketException e)
+			{
+				m_Socket.Disconnect (true);
+				Logger.Log (Logger.LogLevel.Info, "SocketServer", "OnDataReceive: {0}", e.Message);
+			}
+
+			// Return to Listening State
+			m_Socket.BeginReceive(m_bRecvBuffer, 0, 0x1000, SocketFlags.None, new AsyncCallback(OnDataReceive), null);
+		}
+
+		public void ProcessPacket(byte[] buffer)
+		{
+			Logger.Log("Received Packet {0}", buffer);
+		}
+
 		#endregion
 	}
+
 }

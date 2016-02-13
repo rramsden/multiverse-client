@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Multiverse.Network.Packets;
 using Multiverse.Network.Server;
+using Multiverse.Utility.Debugging;
 
 namespace Multiverse.Network
 {
@@ -13,6 +14,7 @@ namespace Multiverse.Network
 		public static void Initialize()
 		{
 			OpcodeList.Add (0, new RequestDelegate (General.Handshake));
+			Logger.Log(Logger.LogLevel.Info, "Packet Monitor", "Monitoring {0} packets.", OpcodeList.Count);
 		}
 	}
 }
