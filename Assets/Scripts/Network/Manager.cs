@@ -11,13 +11,18 @@ namespace Multiverse.Network
 		private SocketServer socket;
 
 		void Start() {
-			socket = new SocketServer (IPAddress.Parse("127.0.0.1"), 4444);
+			socket = new SocketServer ("127.0.0.1", 4444);
 		}
 			
 		void OnGUI() {
 			if (GUILayout.Button ("Connect")) {
-				Debug.Log("Attempting to connect..");
+				Debug.Log("Att:empting to connect..");
 				socket.Connect ();
+			}
+
+			if (GUILayout.Button ("Send")) {
+				byte[] data = Encoding.ASCII.GetBytes("HELLO");
+				socket.Send (data);
 			}
 		}
 	}

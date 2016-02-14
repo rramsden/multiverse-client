@@ -2,6 +2,8 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Text;
+using System.Threading;
 using System.Net.Sockets;
 using Multiverse.Network;
 using Multiverse.Network.Packets;
@@ -14,9 +16,11 @@ namespace Multiverse.Network
 	{
 		#region Private Members
 
-		private IPAddress m_ServerIP;
+		private string m_ServerIP;
 		private int m_Port;
-		private Socket m_Socket;
+		private TcpClient m_Client;
+		private StreamWriter m_Writer;
+		private StreamReader m_Reader;
 
 		private byte[] m_bRecvBuffer = new byte[0x1000];
 		private byte[] m_bPacketStream = new byte[0];
@@ -28,17 +32,11 @@ namespace Multiverse.Network
 
 		#region Constructors
 
-		public SocketServer(IPAddress address, int port)
+		public SocketServer(string address, int port)
 		{
 			this.m_ServerIP = address;
 			this.m_Port = port;
 		}
-
-		#endregion
-
-		#region Properties
-
-		public Socket Socket { get { return m_Socket; } }
 
 		#endregion
 
@@ -51,14 +49,15 @@ namespace Multiverse.Network
 				PacketHandler.Initialize();
 
 				// Connect Socket
-				m_Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				IAsyncResult result = m_Socket.BeginConnect( m_ServerIP, m_Port, new AsyncCallback(OnConnect), null );
+				m_Client = new TcpClient(m_ServerIP, m_Port);
+				m_Writer = new StreamWriter(m_Client.GetStream());
+				m_Reader = new StreamReader(m_Client.GetStream());
+				m_Client.GetStream().BeginRead(m_bRecvBuffer, 0, m_MaxPacketSize, new AsyncCallback(EndDataReceive), null);
 
-				bool success = result.AsyncWaitHandle.WaitOne( 5000, true );
-
-				if (!success)
-				{
-					m_Socket.Close();
+				if (m_Client.Connected) {
+					Logger.Log("Connected to {0} on {1}", m_ServerIP, m_Port);	
+				} else {
+					m_Client.Close();
 					throw new ApplicationException("Failed to connect to server");
 				}
 
@@ -71,34 +70,13 @@ namespace Multiverse.Network
 			return false;
 		}
 
-		public void OnConnect(IAsyncResult async)
-		{
-			try
-			{
-				// Complete the connection
-				m_Socket.EndConnect(async);
-
-				Logger.Log("Client connected to {0}",  m_Socket.RemoteEndPoint);
-
-				// Send Client Handshake
-				Send(new CMSG_HANDSHAKE().Stream);
-
-				// Setup BeginReceive Callback
-				m_Socket.BeginReceive(m_bRecvBuffer, 0, 0x1000, SocketFlags.None, new AsyncCallback(OnDataReceive), null);
-			}
-			catch (SocketException e)
-			{
-				Logger.Log (Logger.LogLevel.Info, "SocketServer", "OnConnect: {0}", e.Message);
-			}
-		}
-
-		public void OnDataReceive(IAsyncResult async)
+		private void EndDataReceive(IAsyncResult async)
 		{
 			int numRecvBytes = 0;
 
 			try
 			{
-				numRecvBytes = m_Socket.EndReceive(async);
+				numRecvBytes = m_Client.GetStream().EndRead(async);
 				byte[] newData = new byte[numRecvBytes];
 
 				Buffer.BlockCopy(m_bRecvBuffer, 0, newData, 0, numRecvBytes);
@@ -111,15 +89,15 @@ namespace Multiverse.Network
 			}
 			catch (SocketException e)
 			{
-				m_Socket.Disconnect (true);
+				m_Client.Close ();
 				Logger.Log (Logger.LogLevel.Info, "SocketServer", "OnDataReceive: {0}", e.Message);
 			}
 
 			// Return to Listening State
-			m_Socket.BeginReceive(m_bRecvBuffer, 0, 0x1000, SocketFlags.None, new AsyncCallback(OnDataReceive), null);
+			m_Client.GetStream().BeginRead(m_bRecvBuffer, 0, m_MaxPacketSize, new AsyncCallback(EndDataReceive), null);
 		}
 
-		public void ProcessPacket(byte[] buffer)
+		private void ProcessPacket(byte[] buffer)
 		{
 			int offset = 0;
 
@@ -150,8 +128,6 @@ namespace Multiverse.Network
 						PacketHandler.OpcodeList[Opcode](payload, this);
 					}
 
-					break;
-
 					offset += Size;
 				} 
 				else
@@ -162,22 +138,14 @@ namespace Multiverse.Network
 			}
 		}
 
-		private void Send(byte[] data)
+		public void EndSend(IAsyncResult async)
 		{
-			m_Socket.BeginSend (data, 0, data.Length, 0, new AsyncCallback (OnSend), null);
+			m_Client.GetStream ().EndWrite (async);
 		}
 
-		private void OnSend(IAsyncResult async)
+		public void Send(byte[] data)
 		{
-			try
-			{
-				int bytesSent = m_Socket.EndSend(async);
-				Logger.Log("Sent {0} bytes to Server", bytesSent);
-			}
-			catch (SocketException e)
-			{
-				Logger.Log (Logger.LogLevel.Info, "SocketServer", "OnSend: {0}", e.Message);
-			}
+			m_Client.GetStream ().BeginWrite (data, 0, data.Length, new AsyncCallback (EndSend), null);
 		}
 
 		#endregion
