@@ -4,6 +4,8 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using Multiverse.Network;
+using Multiverse.Network.Packets;
+using Multiverse.Utility.Stream;
 using Multiverse.Utility.Debugging;
 
 namespace Multiverse.Network
@@ -18,6 +20,9 @@ namespace Multiverse.Network
 
 		private byte[] m_bRecvBuffer = new byte[0x1000];
 		private byte[] m_bPacketStream = new byte[0];
+
+		private int m_MaxPacketSize = 0x1000;
+		private int m_HeaderSize = 6;
 
 		#endregion
 
@@ -75,6 +80,9 @@ namespace Multiverse.Network
 
 				Logger.Log("Client connected to {0}",  m_Socket.RemoteEndPoint);
 
+				// Send Client Handshake
+				Send(new CMSG_HANDSHAKE().Stream);
+
 				// Setup BeginReceive Callback
 				m_Socket.BeginReceive(m_bRecvBuffer, 0, 0x1000, SocketFlags.None, new AsyncCallback(OnDataReceive), null);
 			}
@@ -113,7 +121,63 @@ namespace Multiverse.Network
 
 		public void ProcessPacket(byte[] buffer)
 		{
-			Logger.Log("Received Packet {0}", buffer);
+			int offset = 0;
+
+			PacketReader pReader = new PacketReader (buffer, buffer.Length, true);
+
+			// Traverse Packet
+			while ((buffer.Length - offset) >= m_HeaderSize)
+			{
+				pReader.Seek (offset, System.IO.SeekOrigin.Begin);
+				UInt16 Size = pReader.ReadUInt16 ();
+				UInt16 Flag = pReader.ReadUInt16 ();
+				UInt16 Opcode = pReader.ReadUInt16 ();
+
+				Logger.Log ("Flag {0}", Flag);
+				Logger.Log ("Master {0}", (UInt16)PacketFlag.Master);
+				Logger.Log ("Size {0}", Size);
+
+				if ((Flag == (UInt16)PacketFlag.Master) && (Size < m_MaxPacketSize))
+				{
+					byte[] payload = new byte[Size];
+					Buffer.BlockCopy (buffer, offset, payload, 0, Size);
+
+					Logger.Log (Utility.Misc.HexBytes (payload));
+
+					// Let PacketHandler delegate the Packet
+					if (PacketHandler.OpcodeList.ContainsKey (Opcode))
+					{
+						PacketHandler.OpcodeList[Opcode](payload, this);
+					}
+
+					break;
+
+					offset += Size;
+				} 
+				else
+				{
+					Logger.Log ("Unrecognized Opcode {0}", Opcode);
+					break;
+				}
+			}
+		}
+
+		private void Send(byte[] data)
+		{
+			m_Socket.BeginSend (data, 0, data.Length, 0, new AsyncCallback (OnSend), null);
+		}
+
+		private void OnSend(IAsyncResult async)
+		{
+			try
+			{
+				int bytesSent = m_Socket.EndSend(async);
+				Logger.Log("Sent {0} bytes to Server", bytesSent);
+			}
+			catch (SocketException e)
+			{
+				Logger.Log (Logger.LogLevel.Info, "SocketServer", "OnSend: {0}", e.Message);
+			}
 		}
 
 		#endregion

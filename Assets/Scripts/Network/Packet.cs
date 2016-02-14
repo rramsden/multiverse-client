@@ -4,6 +4,11 @@ using Multiverse.Utility.Stream;
 
 namespace Multiverse.Network.Packets
 {
+	public enum PacketFlag : ushort
+	{
+		Master = 0x5555
+	}
+
 	public abstract class Packet
 	{
 		#region Private Members
@@ -16,6 +21,7 @@ namespace Multiverse.Network.Packets
 		private ushort m_Flag;
 
 		private bool m_Request = false;
+		private ushort m_HeaderSize = 6;
 
 		#endregion
 
@@ -23,6 +29,7 @@ namespace Multiverse.Network.Packets
 
 		public ushort Opcode { get { return m_Opcode; } }
 		public bool Request { get { return m_Request; } }
+		public byte[] Stream { get { return m_Stream.ToArray (); } }
 
 		#endregion
 
@@ -42,6 +49,14 @@ namespace Multiverse.Network.Packets
 			m_Opcode = m_ReadStream.ReadUInt16 ();
 
 			m_Request = true;
+		}
+
+		public void EnsureCapacity(ushort length)
+		{
+			m_Stream = PacketWriter.CreateInstance((length + m_HeaderSize), false);
+			m_Stream.Write((ushort)(length + m_HeaderSize));
+			m_Stream.Write((ushort)PacketFlag.Master);
+			m_Stream.Write((ushort)m_Opcode);
 		}
 
 		#endregion
