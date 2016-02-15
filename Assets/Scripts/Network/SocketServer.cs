@@ -19,8 +19,7 @@ namespace Multiverse.Network
 		private string m_ServerIP;
 		private int m_Port;
 		private TcpClient m_Client;
-		private StreamWriter m_Writer;
-		private StreamReader m_Reader;
+		private Stream m_Stream;
 
 		private byte[] m_bRecvBuffer = new byte[0x1000];
 		private byte[] m_bPacketStream = new byte[0];
@@ -50,9 +49,8 @@ namespace Multiverse.Network
 
 				// Connect Socket
 				m_Client = new TcpClient(m_ServerIP, m_Port);
-				m_Writer = new StreamWriter(m_Client.GetStream());
-				m_Reader = new StreamReader(m_Client.GetStream());
-				m_Client.GetStream().BeginRead(m_bRecvBuffer, 0, m_MaxPacketSize, new AsyncCallback(EndDataReceive), null);
+				m_Stream = m_Client.GetStream();
+				m_Stream.BeginRead(m_bRecvBuffer, 0, m_MaxPacketSize, new AsyncCallback(EndDataReceive), null);
 
 				if (m_Client.Connected) {
 					Logger.Log("Connected to {0} on {1}", m_ServerIP, m_Port);	
@@ -76,12 +74,19 @@ namespace Multiverse.Network
 
 			try
 			{
-				numRecvBytes = m_Client.GetStream().EndRead(async);
+				numRecvBytes = m_Stream.EndRead(async);
 				byte[] newData = new byte[numRecvBytes];
 
 				Buffer.BlockCopy(m_bRecvBuffer, 0, newData, 0, numRecvBytes);
 
 				m_bPacketStream = newData;
+
+				// When server closes its socket 0 is sent
+				if (numRecvBytes == 0)
+				{
+					Disconnect();
+					return;
+				}
 
 				Logger.Log("Received {0} bytes", numRecvBytes);
 
@@ -94,7 +99,7 @@ namespace Multiverse.Network
 			}
 
 			// Return to Listening State
-			m_Client.GetStream().BeginRead(m_bRecvBuffer, 0, m_MaxPacketSize, new AsyncCallback(EndDataReceive), null);
+			m_Stream.BeginRead(m_bRecvBuffer, 0, m_MaxPacketSize, new AsyncCallback(EndDataReceive), null);
 		}
 
 		private void ProcessPacket(byte[] buffer)
@@ -138,14 +143,20 @@ namespace Multiverse.Network
 			}
 		}
 
-		public void EndSend(IAsyncResult async)
+		private void EndSend(IAsyncResult async)
 		{
-			m_Client.GetStream ().EndWrite (async);
+			m_Stream.EndWrite (async);
 		}
 
 		public void Send(byte[] data)
 		{
-			m_Client.GetStream ().BeginWrite (data, 0, data.Length, new AsyncCallback (EndSend), null);
+			m_Stream.BeginWrite (data, 0, data.Length, new AsyncCallback (EndSend), null);
+		}
+
+		public void Disconnect()
+		{
+			m_Client.Close ();
+			Logger.Log ("Disconnected from {0}:{1}", m_ServerIP, m_Port);
 		}
 
 		#endregion
