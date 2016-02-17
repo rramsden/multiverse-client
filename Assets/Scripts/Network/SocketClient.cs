@@ -153,6 +153,8 @@ namespace Multiverse.Network
 
         public void Send(byte[] data)
         {
+            Logger.Log("<- SERVER");
+            Logger.Log(Utility.Misc.HexBytes(data));
             m_Stream.BeginWrite (data, 0, data.Length, new AsyncCallback (EndSend), null);
         }
 

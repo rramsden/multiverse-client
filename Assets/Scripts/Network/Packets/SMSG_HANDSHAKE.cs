@@ -8,13 +8,31 @@ namespace Multiverse.Network.Packets
 	{
 		public SMSG_HANDSHAKE(byte[] packet) : base(packet) { }
 
+    public enum Protocol
+    {
+        INCOMPATIBLE = 0, 
+        SUCCESS = 1,
+        UPDATE_AVAILABLE = 2
+    }
+
     #region Properties
 
     public int Status
     {
         get
         {
-            return m_ReadStream.ReadInt32();
+            return m_ReadStream.ReadByte();
+        }
+    }
+
+    public string Version
+    {
+        get
+        {
+            var major = m_ReadStream.ReadByte();
+            var minor = m_ReadStream.ReadByte();
+            var micro = m_ReadStream.ReadByte();
+            return String.Format("{0}.{1}.{2}", major, minor, micro);
         }
     }
 
