@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using Multiverse.Utility.Debugging;
 
 namespace Multiverse.Network.Packets
 {
@@ -6,11 +8,23 @@ namespace Multiverse.Network.Packets
 	{
 		public SMSG_HANDSHAKE(byte[] packet) : base(packet) { }
 
+    #region Properties
+
+    public int Status
+    {
+        get
+        {
+            return m_ReadStream.ReadInt32();
+        }
+    }
+
+    #endregion
+
 		#region Conversions
 
 		public static explicit operator SMSG_HANDSHAKE(byte[] packet)
 		{
-			SMSG_HANDSHAKE pkt = new SMSG_HANDSHAKE(packet);
+			var pkt = new SMSG_HANDSHAKE(packet);
 			return pkt;
 		}
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Collections.Generic;
 using Multiverse.Network;
 using Multiverse.Network.Packets;
 using Multiverse.Utility.Stream;
@@ -10,6 +11,13 @@ namespace Multiverse.Network
 {
     public class SocketClient
     {
+
+        #region Public Members
+
+        public Queue<byte[]> PacketQueue = new Queue<byte[]>();
+
+        #endregion
+
         #region Private Members
 
         private readonly string m_ServerIP;
@@ -86,8 +94,11 @@ namespace Multiverse.Network
                 }
 
                 Logger.Log("Received {0} bytes", numRecvBytes);
+                Logger.Log(Utility.Misc.HexBytes(m_bPacketStream));
 
-                ProcessPacket(m_bRecvBuffer);
+                // Process the packet
+                ProcessPacket(m_bPacketStream);
+                ProcessQueue();
             }
             catch (SocketException e)
             {
@@ -113,28 +124,18 @@ namespace Multiverse.Network
                 UInt16 Flag = pReader.ReadUInt16 ();
                 UInt16 Opcode = pReader.ReadUInt16 ();
 
-                Logger.Log ("Flag {0}", Flag);
-                Logger.Log ("Master {0}", (UInt16)PacketFlag.Master);
-                Logger.Log ("Size {0}", Size);
-
                 if ((Flag == (UInt16)PacketFlag.Master) && (Size < MAX_PACKET_SIZE))
                 {
                     var payload = new byte[Size];
                     Buffer.BlockCopy (buffer, offset, payload, 0, Size);
 
-                    Logger.Log (Utility.Misc.HexBytes (payload));
-
                     // Let PacketHandler delegate the Packet
                     if (PacketHandler.OpcodeList.ContainsKey (Opcode))
                     {
                         PacketHandler.OpcodeList[Opcode](payload, this);
-                        Logger.Log("Processed Opcode {0}", Opcode);
                     }
 
-                    if (Size == 0) {
-                        break;
-                    }
-
+                    if (Size == 0) {break;}
                     offset += Size;
                 } 
                 else
@@ -153,6 +154,18 @@ namespace Multiverse.Network
         public void Send(byte[] data)
         {
             m_Stream.BeginWrite (data, 0, data.Length, new AsyncCallback (EndSend), null);
+        }
+
+        public void ProcessQueue()
+        {
+            Logger.Log("QueueLength: {0}", PacketQueue.Count);
+            while(PacketQueue.Count > 0)
+            {
+                byte[] packet = PacketQueue.Dequeue();
+                Logger.Log("Processing Packet:");
+                Logger.Log (Utility.Misc.HexBytes (packet));
+                Send(packet);
+            }
         }
 
         public void Disconnect()
