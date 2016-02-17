@@ -10,3 +10,5 @@
 **/*.userprefs
 **/*.pidb
 **/*.meta
+
+Builds/*
