@@ -8,7 +8,7 @@ namespace Multiverse.Network
 {
 	public class PacketHandler
 	{
-		public delegate void RequestDelegate(byte[] x, SocketServer y);
+		public delegate void RequestDelegate(byte[] x, SocketClient y);
 		public static Dictionary<UInt16, RequestDelegate> OpcodeList = new Dictionary<ushort, RequestDelegate>();
 
 		public static void Initialize()

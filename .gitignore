@@ -10,5 +10,5 @@
 **/*.userprefs
 **/*.pidb
 **/*.meta
-
+obj/*
 Builds/*

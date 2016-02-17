@@ -4,16 +4,17 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System;
+using Multiverse.Network.Packets;
 
 namespace Multiverse.Network
 {
 	public class Manager : MonoBehaviour {
-		private SocketServer socket;
+		private SocketClient socket;
 
 		void Start() {
-			socket = new SocketServer ("127.0.0.1", 4444);
+			socket = new SocketClient ("127.0.0.1", 4444);
 		}
-			
+
 		void OnGUI() {
 			if (GUILayout.Button ("Connect")) {
 				Debug.Log("Att:empting to connect..");
@@ -21,7 +22,7 @@ namespace Multiverse.Network
 			}
 
 			if (GUILayout.Button ("Send")) {
-				byte[] data = Encoding.ASCII.GetBytes("HELLO");
+        byte[] data = new CMSG_HANDSHAKE().Stream;
 				socket.Send (data);
 			}
 		}
