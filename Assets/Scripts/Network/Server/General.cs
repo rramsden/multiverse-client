@@ -14,9 +14,9 @@ namespace Multiverse.Network.Server
         Logger.Log("SERVER VERSION: {0}", handshake.Version);
 
         if (status == (int)SMSG_HANDSHAKE.Protocol.SUCCESS) {
-            Logger.Log("HANDSHAKE_COMPLETE");
+            Logger.Log("HANDSHAKE_OK");
         } else {
-            Logger.Log("HANDSHAKE_FAILED");
+            Logger.Log("PROTOCOL_NOT_SUPPORTED");
         }
 		}
 	}
