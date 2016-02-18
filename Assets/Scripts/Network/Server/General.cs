@@ -9,12 +9,13 @@ namespace Multiverse.Network.Server
 		public static void Handshake(byte[] packet, SocketClient sockstate)
 		{
         var handshake = (SMSG_HANDSHAKE)(packet);
+        var status = handshake.Status;
+        Logger.Log("CLIENT VERSION: {0}", CMSG_HANDSHAKE.Version);
+        Logger.Log("SERVER VERSION: {0}", handshake.Version);
 
-        if (handshake.Status == (int)SMSG_HANDSHAKE.Protocol.SUCCESS) {
-            Logger.Log("SERVER VERSION: {0}", handshake.Version);
+        if (status == (int)SMSG_HANDSHAKE.Protocol.SUCCESS) {
             Logger.Log("HANDSHAKE_COMPLETE");
         } else {
-            Logger.Log("SERVER VERSION: {0}", handshake.Version);
             Logger.Log("HANDSHAKE_FAILED");
         }
 		}

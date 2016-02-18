@@ -3,6 +3,13 @@ using Multiverse.Utility.Debugging;
 
 namespace Multiverse.Network.Packets
 {
+    public enum Protocol
+    {
+        MAJOR = 0,
+        MINOR = 0,
+        PATCH = 1
+    }
+
     public enum PacketFlag : ushort
     {
         Master = 0x5555
