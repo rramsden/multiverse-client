@@ -103,7 +103,7 @@ namespace Multiverse.Network
             catch (SocketException e)
             {
                 Disconnect ();
-                Debugger.Log (Debugger.LogLevel.Info, "SocketServer", "OnDataReceive: {0}", e.Message);
+                Debugger.Log (Debugger.LogLevel.Info, "SocketServer", "EndDataReceive: {0}", e.Message);
             }
             catch (Exception e)
             {
