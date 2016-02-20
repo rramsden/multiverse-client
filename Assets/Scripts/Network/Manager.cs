@@ -1,9 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
-using System.Net;
-using System;
 using Multiverse.Network.Packets;
 
 namespace Multiverse.Network
@@ -17,7 +12,7 @@ namespace Multiverse.Network
 
         void OnGUI() {
             if (GUILayout.Button ("Connect")) {
-                Debug.Log("Att:empting to connect..");
+                Debug.Log("Attempting to connect..");
                 socket.Connect ();
             }
 

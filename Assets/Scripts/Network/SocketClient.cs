@@ -58,7 +58,7 @@ namespace Multiverse.Network
                 m_Stream.BeginRead(m_bRecvBuffer, 0, MAX_PACKET_SIZE, new AsyncCallback(EndDataReceive), null);
 
                 if (m_Socket.Connected) {
-                    Logger.Log("Connected to {0} on {1}", m_ServerIP, m_Port);	
+                    Debugger.Log("Connected to {0} on {1}", m_ServerIP, m_Port);	
                 } else {
                     Disconnect();
                     throw new ApplicationException("Failed to connect to server");
@@ -68,7 +68,7 @@ namespace Multiverse.Network
             }
             catch(Exception e)
             {
-                Logger.Log (Logger.LogLevel.Info, "SocketServer", "Connect: {0}", e.Message);
+                Debugger.Log (Debugger.LogLevel.Info, "SocketServer", "Connect: {0}", e.Message);
             }
             return false;
         }
@@ -93,8 +93,8 @@ namespace Multiverse.Network
                     return;
                 }
 
-                Logger.Log("Received {0} bytes", numRecvBytes);
-                Logger.Log(Utility.Misc.HexBytes(m_bPacketStream));
+                Debugger.Log("Received {0} bytes", numRecvBytes);
+                Debugger.Log(Utility.Misc.HexBytes(m_bPacketStream));
 
                 // Process the packet
                 ProcessPacket(m_bPacketStream);
@@ -103,7 +103,11 @@ namespace Multiverse.Network
             catch (SocketException e)
             {
                 Disconnect ();
-                Logger.Log (Logger.LogLevel.Info, "SocketServer", "OnDataReceive: {0}", e.Message);
+                Debugger.Log (Debugger.LogLevel.Info, "SocketServer", "OnDataReceive: {0}", e.Message);
+            }
+            catch (Exception e)
+            {
+                Debugger.Log ("{0}:\n{1}", e.Message, e.StackTrace);
             }
 
             // Return to Listening State
@@ -140,7 +144,7 @@ namespace Multiverse.Network
                 } 
                 else
                 {
-                    Logger.Log ("Unrecognized Opcode {0}", Opcode);
+                    Debugger.Log ("Unrecognized Opcode {0}", Opcode);
                     break;
                 }
             }
@@ -153,19 +157,18 @@ namespace Multiverse.Network
 
         public void Send(byte[] data)
         {
-            Logger.Log("<- SERVER");
-            Logger.Log(Utility.Misc.HexBytes(data));
+            Debugger.Log("<- SERVER");
+            Debugger.Log(Utility.Misc.HexBytes(data));
             m_Stream.BeginWrite (data, 0, data.Length, new AsyncCallback (EndSend), null);
         }
 
         public void ProcessQueue()
         {
-            Logger.Log("QueueLength: {0}", PacketQueue.Count);
             while(PacketQueue.Count > 0)
             {
                 byte[] packet = PacketQueue.Dequeue();
-                Logger.Log("Processing Packet:");
-                Logger.Log (Utility.Misc.HexBytes (packet));
+                Debugger.Log("Processing Packet:");
+                Debugger.Log (Utility.Misc.HexBytes (packet));
                 Send(packet);
             }
         }
@@ -173,7 +176,7 @@ namespace Multiverse.Network
         public void Disconnect()
         {
             m_Socket.Close ();
-            Logger.Log ("Disconnected from {0}:{1}", m_ServerIP, m_Port);
+            Debugger.Log ("Disconnected from {0}:{1}", m_ServerIP, m_Port);
         }
 
         #endregion

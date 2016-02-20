@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using Multiverse.Utility.Debugging;
-using MsgPack;
+﻿using MsgPack;
 
 namespace Multiverse.Network.Packets
 {

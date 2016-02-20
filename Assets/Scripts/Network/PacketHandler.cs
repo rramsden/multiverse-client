@@ -14,7 +14,7 @@ namespace Multiverse.Network
 		public static void Initialize()
 		{
 			OpcodeList.Add (0, new RequestDelegate (General.Handshake));
-			Logger.Log(Logger.LogLevel.Info, "Packet Monitor", "Monitoring {0} packets.", OpcodeList.Count);
+			Debugger.Log(Debugger.LogLevel.Info, "Packet Monitor", "Monitoring {0} packets.", OpcodeList.Count);
 		}
 	}
 }
