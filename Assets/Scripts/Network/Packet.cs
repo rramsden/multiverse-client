@@ -1,5 +1,9 @@
-﻿using Multiverse.Utility.Stream;
-using Multiverse.Utility.Debugging;
+﻿using System.IO;
+using System.Collections.Generic;
+using Multiverse.Utility.Stream;
+using MsgPack;
+using MsgPack.Serialization;
+
 
 namespace Multiverse.Network.Packets
 {
@@ -25,6 +29,7 @@ namespace Multiverse.Network.Packets
         private readonly ushort m_Opcode;
         private ushort m_Size;
         private ushort m_Flag;
+        private MessagePackObjectDictionary m_Dict;
 
         private bool m_Request;
         private const ushort HEADER_SIZE = 6;
@@ -36,6 +41,7 @@ namespace Multiverse.Network.Packets
         public ushort Opcode { get { return m_Opcode; } }
         public bool Request { get { return m_Request; } }
         public byte[] Stream { get { return m_Stream.ToArray (); } }
+        public MessagePackObjectDictionary Body { get { return m_Dict; } }
 
         #endregion
 
@@ -54,15 +60,33 @@ namespace Multiverse.Network.Packets
             m_Flag = m_ReadStream.ReadUInt16 ();
             m_Opcode = m_ReadStream.ReadUInt16 ();
 
+            Deserialize();
+
             m_Request = true;
         }
 
         public void EnsureCapacity(ushort length)
         {
-            m_Stream = PacketWriter.CreateInstance((length + HEADER_SIZE), false);
+            m_Stream = new PacketWriter((length + HEADER_SIZE));
             m_Stream.Write((ushort)(length + HEADER_SIZE));
             m_Stream.Write((ushort)PacketFlag.Master);
             m_Stream.Write(m_Opcode);
+        }
+
+        public void Serialize(MessagePackObjectDictionary body)
+        {
+            var serializer = MessagePackSerializer.Get<MessagePackObjectDictionary>();
+            var stream = new MemoryStream();
+            serializer.Pack(stream, body);
+            var buffer = stream.GetBuffer();
+            EnsureCapacity((ushort)stream.Length);
+            m_Stream.Write(buffer, 0, (int)stream.Length);
+        }
+
+        public void Deserialize()
+        {
+            var serializer = MessagePackSerializer.Get<MessagePackObjectDictionary>();
+            m_Dict = serializer.Unpack(m_ReadStream.Stream);
         }
 
         #endregion

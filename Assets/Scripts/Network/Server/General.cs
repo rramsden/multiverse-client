@@ -1,6 +1,7 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using Multiverse.Network.Packets;
 using Multiverse.Utility.Debugging;
+using MsgPack;
 
 namespace Multiverse.Network.Server
 {
@@ -8,16 +9,19 @@ namespace Multiverse.Network.Server
 	{
 		public static void Handshake(byte[] packet, SocketClient sockstate)
 		{
-        var handshake = (SMSG_HANDSHAKE)(packet);
-        var status = handshake.Status;
-        Logger.Log("CLIENT VERSION: {0}", CMSG_HANDSHAKE.Version);
-        Logger.Log("SERVER VERSION: {0}", handshake.Version);
+        var handshake = (HANDSHAKE)(packet);
 
-        if (status == (int)SMSG_HANDSHAKE.Protocol.SUCCESS) {
+        var major = handshake.Body["major"].AsInt32();
+        var minor = handshake.Body["minor"].AsInt32();
+        var patch = handshake.Body["patch"].AsInt32();
+
+        Logger.Log("SERVER PROTOCOL: v{0}.{1}.{2}", major, minor, patch);
+
+        if (handshake.Body["success"].AsBoolean()) {
             Logger.Log("HANDSHAKE_OK");
         } else {
-            Logger.Log("PROTOCOL_NOT_SUPPORTED");
+            Logger.Log("HANDSHAKE_FAILED");
         }
-		}
+    }
 	}
 }
