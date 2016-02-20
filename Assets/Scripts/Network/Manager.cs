@@ -4,9 +4,15 @@ using Multiverse.Network.Packets;
 namespace Multiverse.Network
 {
     public class Manager : MonoBehaviour {
+        public static Manager instance = null;
         private SocketClient socket;
 
-        void Start() {
+        void Awake() {
+            if (instance == null) {
+                instance = this;
+            }
+
+            DontDestroyOnLoad(gameObject); // don't destroy on scene change
             socket = new SocketClient ("127.0.0.1", 4444);
         }
 
@@ -20,6 +26,10 @@ namespace Multiverse.Network
                 var data = new HANDSHAKE().Stream;
                 socket.Send (data);
             }
+        }
+
+        public void Send(Packet packet) {
+            socket.Send(packet.Stream);
         }
     }
 }

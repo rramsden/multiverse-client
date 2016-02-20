@@ -1,27 +1,36 @@
 ﻿using UnityEngine;
-using System.Collections;
+using Multiverse.Network.Packets;
 
 public class Player : MonoBehaviour {
-	public float playerSpeed = 0.03f;
+    public float playerSpeed = 0.03f;
+    public bool isMoving = false;
+    public bool isPlayer = true;
 
-	public bool isMoving = false;
-	Vector3 currentPosition;
+    Vector3 currentPosition;
 
-	void Start() {
-		currentPosition = transform.position;
-	}
+    void Start() {
+        currentPosition = transform.position;
+    }
 
-	void Update () {
-		updatePosition ();
-	}
+    void Update () {
+        updatePosition ();
 
-	private void updatePosition() {
-		isMoving = currentPosition != transform.position;
-		currentPosition = transform.position;
+        if (isMoving && isPlayer)
+          broadcastPosition();
+    }
 
-		float h = Input.GetAxis ("Horizontal") * playerSpeed;
-		float v = Input.GetAxis ("Vertical") * playerSpeed;
+    private void updatePosition() {
+        isMoving = currentPosition != transform.position;
+        currentPosition = transform.position;
 
-		transform.Translate (h, 0, v);
-	}
+        float h = Input.GetAxis ("Horizontal") * playerSpeed;
+        float v = Input.GetAxis ("Vertical") * playerSpeed;
+
+        transform.Translate (h, 0, v);
+    }
+
+    private void broadcastPosition() {
+        var packet = new PLAYER_MOVE(currentPosition, this.GetInstanceID());
+        Multiverse.Network.Manager.instance.Send(packet);
+    }
 }
