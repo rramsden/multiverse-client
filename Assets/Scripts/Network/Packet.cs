@@ -15,11 +15,6 @@ namespace Multiverse.Network.Packets
         PATCH = 1
     }
 
-    public enum PacketFlag : ushort
-    {
-        Master = 0x5555
-    }
-
     public class Packet
     {
         #region Private Members
@@ -29,11 +24,9 @@ namespace Multiverse.Network.Packets
 
         private readonly ushort m_Opcode;
         private ushort m_Size;
-        private ushort m_Flag;
         private MessagePackObjectDictionary m_Dict;
 
         private bool m_Request;
-        private const ushort HEADER_SIZE = 6;
 
         #endregion
 
@@ -43,6 +36,7 @@ namespace Multiverse.Network.Packets
         public bool Request { get { return m_Request; } }
         public byte[] Stream { get { return m_Stream.ToArray (); } }
         public MessagePackObjectDictionary Body { get { return m_Dict; } }
+        public const ushort HEADER_SIZE = 4;
 
         #endregion
 
@@ -58,7 +52,6 @@ namespace Multiverse.Network.Packets
             m_ReadStream = new PacketReader (buffer, buffer.Length, true);
 
             m_Size = m_ReadStream.ReadUInt16 ();
-            m_Flag = m_ReadStream.ReadUInt16 ();
             m_Opcode = m_ReadStream.ReadUInt16 ();
 
             Deserialize();
@@ -70,7 +63,6 @@ namespace Multiverse.Network.Packets
         {
             m_Stream = new PacketWriter((length + HEADER_SIZE));
             m_Stream.Write((ushort)(length + HEADER_SIZE));
-            m_Stream.Write((ushort)PacketFlag.Master);
             m_Stream.Write(m_Opcode);
         }
 

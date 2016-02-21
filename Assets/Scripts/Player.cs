@@ -13,10 +13,13 @@ public class Player : MonoBehaviour {
     }
 
     void Update () {
-        updatePosition ();
+        if (isPlayer) {
+          updatePosition ();
+        }
 
-        if (isMoving && isPlayer)
+        if (isMoving && isPlayer) {
           broadcastPosition();
+        }
     }
 
     private void updatePosition() {
@@ -30,7 +33,7 @@ public class Player : MonoBehaviour {
     }
 
     private void broadcastPosition() {
-        var packet = new PLAYER_MOVE(currentPosition, this.GetInstanceID());
+        var packet = new PLAYER_MOVE(currentPosition, GetInstanceID());
         Multiverse.Network.Manager.instance.Send(packet);
     }
 }

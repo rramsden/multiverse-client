@@ -30,7 +30,6 @@ namespace Multiverse.Network
         private byte[] m_bPacketStream = new byte[0];
 
         private const int MAX_PACKET_SIZE = 0x1000;
-        private const int HEADER_SIZE = 6;
 
         #endregion
 
@@ -121,14 +120,13 @@ namespace Multiverse.Network
             var pReader = new PacketReader (buffer, buffer.Length, true);
 
             // Traverse Packet
-            while ((buffer.Length - offset) >= HEADER_SIZE)
+            while ((buffer.Length - offset) >= Packet.HEADER_SIZE)
             {
                 pReader.Seek (offset, SeekOrigin.Begin);
                 UInt16 Size = pReader.ReadUInt16 ();
-                UInt16 Flag = pReader.ReadUInt16 ();
                 UInt16 Opcode = pReader.ReadUInt16 ();
 
-                if ((Flag == (UInt16)PacketFlag.Master) && (Size < MAX_PACKET_SIZE))
+                if (Size < MAX_PACKET_SIZE)
                 {
                     var payload = new byte[Size];
                     Buffer.BlockCopy (buffer, offset, payload, 0, Size);
@@ -141,7 +139,7 @@ namespace Multiverse.Network
 
                     if (Size == 0) {break;}
                     offset += Size;
-                } 
+                }
                 else
                 {
                     Debugger.Log ("Unrecognized Opcode {0}", Opcode);
